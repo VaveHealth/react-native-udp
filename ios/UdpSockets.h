@@ -16,4 +16,6 @@
 
 @interface UdpSockets : NSObject<SocketClientDelegate, RCTBridgeModule>
 
+@property (nonatomic, assign) BOOL setBridgeOnMainQueue;
+
 @end
