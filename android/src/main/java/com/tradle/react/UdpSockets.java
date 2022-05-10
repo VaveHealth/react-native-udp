@@ -37,7 +37,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     private static final String TAG = "UdpSockets";
     private static final int N_THREADS = 2;
     private native void nativeInstall(long jsiPtr, String docDir);
-    private int _NUMBER_OF_MEMORISED_FRAMES;
+    private int _MAX_NUMBER_OF_MEMORISED_FRAMES;
 
     public Map<Integer, byte[]> _framesData;
 
@@ -54,7 +54,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
             );
 
             _framesData = new LinkedHashMap<>();
-            _NUMBER_OF_MEMORISED_FRAMES = 255;
+            _MAX_NUMBER_OF_MEMORISED_FRAMES = 255;
 
             return true;
         } catch (Exception exception) {
@@ -63,7 +63,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public void addFrameData(int frameNo, byte[] frameData) {
-        if(_framesData.size() >= _NUMBER_OF_MEMORISED_FRAMES) {
+        if(_framesData.size() >= _MAX_NUMBER_OF_MEMORISED_FRAMES) {
             int firstMemorisedFrameNo = getFirstMemorisedFrameNo();
             _framesData.remove(firstMemorisedFrameNo);
         }
@@ -93,6 +93,14 @@ public final class UdpSockets extends ReactContextBaseJavaModule
 
     public int getCountOfMemorisedFrames() {
         return _framesData.size();
+    }
+
+    public int getMaxNumberOfMemorisedFrames() {
+        return _MAX_NUMBER_OF_MEMORISED_FRAMES;
+    }
+
+    public void setMaxNumberOfMemorisedFrames(int maxNumberOfFrames) {
+        _MAX_NUMBER_OF_MEMORISED_FRAMES = maxNumberOfFrames;
     }
 
     private WifiManager.MulticastLock mMulticastLock;
@@ -282,15 +290,9 @@ public final class UdpSockets extends ReactContextBaseJavaModule
 
                 try {
                     client.send(base64String, port, address, callback);
-                } catch (IllegalStateException ise) {
-                    callback.invoke(UdpErrorUtil.getError(null, ise.getMessage()));
-                } catch (UnknownHostException uhe) {
-                    callback.invoke(UdpErrorUtil.getError(null, uhe.getMessage()));
-                } catch (IOException ioe) {
-                    // an exception occurred
-                    callback.invoke(UdpErrorUtil.getError(null, ioe.getMessage()));
+                } catch (Exception exception) {
+                    callback.invoke((UdpErrorUtil.getError(null, exception.getMessage())));
                 }
-            }
         }));
     }
 

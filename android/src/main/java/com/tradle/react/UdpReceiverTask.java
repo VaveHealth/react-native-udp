@@ -40,7 +40,6 @@ public class UdpReceiverTask implements Runnable {
         final byte[] buffer = new byte[MAX_UDP_DATAGRAM_LEN];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-
         while (isRunning) {
             try {
                 socket.receive(packet);

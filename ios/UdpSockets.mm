@@ -24,7 +24,7 @@ using namespace std;
     NSMutableDictionary<NSNumber *, UdpSocketClient *> *_clients;
     NSMutableDictionary<NSNumber *, NSData *> *_framesData;
     NSMutableArray *_framesNumbers;
-    NSNumber *_NUMBER_OF_MEMORISED_FRAMES;
+    NSNumber *_MAX_NUMBER_OF_MEMORISED_FRAMES;
 }
 
 @synthesize bridge = _bridge;
@@ -52,7 +52,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 
     _framesData = [NSMutableDictionary new];
     _framesNumbers = [NSMutableArray new];
-    _NUMBER_OF_MEMORISED_FRAMES = @(225);
+    _MAX_NUMBER_OF_MEMORISED_FRAMES = @(225);
 
     install(*(facebook::jsi::Runtime *)jsiRuntime, self);
     return @true;
@@ -65,22 +65,22 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
     }
 }
 
-- (void)addFrameData:(NSNumber*)key data:(NSData*) data {
-    if([_framesNumbers count] >= [_NUMBER_OF_MEMORISED_FRAMES intValue]) {
-        NSNumber *keyToRemove = [_framesNumbers objectAtIndex:0];
+- (void)addFrameData:(NSNumber*)frameNo data:(NSData*) data {
+    if([_framesNumbers count] >= [_MAX_NUMBER_OF_MEMORISED_FRAMES intValue]) {
+        NSNumber *frameToRemove = [_framesNumbers objectAtIndex:0];
         [_framesNumbers removeObjectAtIndex:0];
-        [_framesData removeObjectForKey:keyToRemove];
+        [_framesData removeObjectForKey:frameToRemove];
     }
 
-    [_framesNumbers addObject:key];
-    _framesData[key] = data;
+    [_framesNumbers addObject:frameNo];
+    _framesData[frameNo] = data;
 }
 
-- (NSData *)getFrameDataByFrameNo:(NSNumber*)key {
-    return _framesData[key] ?: [NSData data];
+- (NSData *)getFrameDataByFrameNo:(NSNumber*)frameNo {
+    return _framesData[frameNo] ?: [NSData data];
 }
 
--(NSNumber *) getFirstMemorisedFrameNo {
+- (NSNumber *)getFirstMemorisedFrameNo {
     if(![_framesNumbers count]) {
         return @(-1);
     }
@@ -88,7 +88,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
     return [_framesNumbers objectAtIndex:0];
 }
 
--(NSNumber *) getLastMemorisedFrameNo {
+- (NSNumber *) getLastMemorisedFrameNo {
     if(![_framesNumbers count]) {
         return @(-1);
     }
@@ -96,8 +96,16 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
     return [_framesNumbers lastObject];
 }
 
--(NSNumber *) getCountOfMemorisedFrames {
+- (NSNumber *) getCountOfMemorisedFrames {
     return [NSNumber numberWithInteger:[_framesNumbers count]];
+}
+
+- (NSNumber *) getMaxNumberOfMemorisedFrames {
+    return _MAX_NUMBER_OF_MEMORISED_FRAMES;
+}
+
+- (void) setMaxNumberOfMemorisedFrames:(NSNumber *)maxNumberOfFrames {
+    _MAX_NUMBER_OF_MEMORISED_FRAMES = maxNumberOfFrames;
 }
 
 static void install(facebook::jsi::Runtime &jsiRuntime, UdpSockets *udpSockets) {
@@ -166,6 +174,37 @@ static void install(facebook::jsi::Runtime &jsiRuntime, UdpSockets *udpSockets) 
 
     jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_getCountOfMemorisedFrames", std::move(JSI_RN_UDP_getCountOfMemorisedFrames));
 
+    auto JSI_RN_UDP_getMaxNumberOfMemorisedFrames = Function::createFromHostFunction(jsiRuntime,
+                                                                 PropNameID::forAscii(jsiRuntime,
+                                                                                      "JSI_RN_UDP_getMaxNumberOfMemorisedFrames"),
+                                                                 0,
+                                                                 [udpSockets](Runtime &runtime,
+                                                                    const Value &thisValue,
+                                                                    const Value *arguments,
+                                                                    size_t count) -> Value {
+        int maxNumberOfFrames = [[udpSockets getMaxNumberOfMemorisedFrames] intValue];
+
+        return Value(maxNumberOfFrames);
+                                                                 });
+
+    jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_getMaxNumberOfMemorisedFrames", std::move(JSI_RN_UDP_getMaxNumberOfMemorisedFrames));
+
+    auto JSI_RN_UDP_setMaxNumberOfMemorisedFrames = Function::createFromHostFunction(jsiRuntime,
+                                                                 PropNameID::forAscii(jsiRuntime,
+                                                                                      "JSI_RN_UDP_setMaxNumberOfMemorisedFrames"),
+                                                                 1,
+                                                                 [udpSockets](Runtime &runtime,
+                                                                    const Value &thisValue,
+                                                                    const Value *arguments,
+                                                                    size_t count) -> Value {
+        int maxNumberOfFrames = arguments[0].getNumber();
+
+        [udpSockets setMaxNumberOfMemorisedFrames:[NSNumber numberWithInt:maxNumberOfFrames]];
+
+        return Value::undefined();
+                                                                 });
+
+    jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_setMaxNumberOfMemorisedFrames", std::move(JSI_RN_UDP_setMaxNumberOfMemorisedFrames));
 }
 
 RCT_EXPORT_METHOD(createSocket:(nonnull NSNumber*)cId withOptions:(NSDictionary*)options)

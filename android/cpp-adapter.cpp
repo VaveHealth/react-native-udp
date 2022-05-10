@@ -192,6 +192,60 @@ void install(facebook::jsi::Runtime &jsiRuntime) {
                                                              });
 
     jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_getCountOfMemorisedFrames", std::move(JSI_RN_UDP_getCountOfMemorisedFrames));
+
+    auto JSI_RN_UDP_getMaxNumberOfMemorisedFrames = Function::createFromHostFunction(jsiRuntime,
+                                                                                 PropNameID::forAscii(jsiRuntime,
+                                                                                                      "JSI_RN_UDP_getMaxNumberOfMemorisedFrames"),
+                                                                                 0,
+                                                                                 [](Runtime &runtime,
+                                                                                    const Value &thisValue,
+                                                                                    const Value *arguments,
+                                                                                    size_t count) -> Value {
+
+                                                                                     JNIEnv *jniEnv = GetJniEnv();
+
+                                                                                     java_class = jniEnv->GetObjectClass(
+                                                                                             java_object);
+
+                                                                                     jmethodID methodId = jniEnv->GetMethodID(
+                                                                                             java_class, "getMaxNumberOfMemorisedFrames", "()I");
+
+                                                                                     auto maxNumberOfFrames = jniEnv->CallIntMethod(
+                                                                                             java_object,
+                                                                                             methodId);
+
+                                                                                     return Value(maxNumberOfFrames);
+                                                                                 });
+
+    jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_getMaxNumberOfMemorisedFrames", std::move(JSI_RN_UDP_getMaxNumberOfMemorisedFrames));
+
+    auto JSI_RN_UDP_setMaxNumberOfMemorisedFrames = Function::createFromHostFunction(jsiRuntime,
+                                                                                     PropNameID::forAscii(jsiRuntime,
+                                                                                                          "JSI_RN_UDP_setMaxNumberOfMemorisedFrames"),
+                                                                                     1,
+                                                                                     [](Runtime &runtime,
+                                                                                        const Value &thisValue,
+                                                                                        const Value *arguments,
+                                                                                        size_t count) -> Value {
+
+                                                                                         JNIEnv *jniEnv = GetJniEnv();
+
+                                                                                         java_class = jniEnv->GetObjectClass(
+                                                                                                 java_object);
+
+                                                                                         jmethodID methodId = jniEnv->GetMethodID(
+                                                                                                 java_class, "setMaxNumberOfMemorisedFrames", "(I)V");
+
+                                                                                         int maxNumberOfFrames = arguments[0].getNumber();
+
+                                                                                         jniEnv->CallVoidMethod(
+                                                                                                 java_object,
+                                                                                                 methodId, maxNumberOfFrames);
+
+                                                                                         return Value::undefined();
+                                                                                     });
+
+    jsiRuntime.global().setProperty(jsiRuntime, "JSI_RN_UDP_setMaxNumberOfMemorisedFrames", std::move(JSI_RN_UDP_setMaxNumberOfMemorisedFrames));
 }
 
 extern "C"
