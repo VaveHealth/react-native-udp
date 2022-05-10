@@ -6,6 +6,7 @@ import android.net.wifi.WifiManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import android.util.Log;
 import android.util.SparseArray;
 
 import com.facebook.common.logging.FLog;
@@ -22,16 +23,77 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * The NativeModule in charge of storing active {@link UdpSocketClient}s, and acting as an api layer.
  */
+
 public final class UdpSockets extends ReactContextBaseJavaModule
         implements UdpSocketClient.OnDataReceivedListener, UdpSocketClient.OnRuntimeExceptionListener {
     private static final String TAG = "UdpSockets";
     private static final int N_THREADS = 2;
+    private native void nativeInstall(long jsiPtr, String docDir);
+    private int _NUMBER_OF_MEMORISED_FRAMES;
+
+    public Map<Integer, byte[]> _framesData;
+
+    @ReactMethod(isBlockingSynchronousMethod = true)
+    public boolean install() {
+        try {
+            Log.i(TAG, "Loading C++ library...");
+            System.loadLibrary("reactnativeudp");
+
+            ReactApplicationContext context = getReactApplicationContext();
+            nativeInstall(
+                context.getJavaScriptContextHolder().get(),
+                context.getFilesDir().getAbsolutePath()
+            );
+
+            _framesData = new LinkedHashMap<>();
+            _NUMBER_OF_MEMORISED_FRAMES = 255;
+
+            return true;
+        } catch (Exception exception) {
+            return false;
+        }
+    }
+
+    public void addFrameData(int frameNo, byte[] frameData) {
+        if(_framesData.size() >= _NUMBER_OF_MEMORISED_FRAMES) {
+            int firstMemorisedFrameNo = getFirstMemorisedFrameNo();
+            _framesData.remove(firstMemorisedFrameNo);
+        }
+
+        _framesData.put(frameNo, frameData.clone());
+    }
+
+    public byte[] getFrameDataByFrameNo(int frameNo) {
+        return _framesData.getOrDefault(frameNo, new byte[0]);
+    }
+
+    public int getFirstMemorisedFrameNo() {
+        if(_framesData.isEmpty()) {
+            return -1;
+        }
+
+        return _framesData.keySet().stream().findFirst().get();
+    }
+
+    public int getLastMemorisedFrameNo() {
+        if(_framesData.isEmpty()) {
+            return -1;
+        }
+
+        return _framesData.keySet().stream().skip(getCountOfMemorisedFrames() - 1).findFirst().get();
+    }
+
+    public int getCountOfMemorisedFrames() {
+        return _framesData.size();
+    }
 
     private WifiManager.MulticastLock mMulticastLock;
     private final SparseArray<UdpSocketClient> mClients = new SparseArray<>();
@@ -220,8 +282,13 @@ public final class UdpSockets extends ReactContextBaseJavaModule
 
                 try {
                     client.send(base64String, port, address, callback);
-                } catch (Exception exception) {
-                    callback.invoke((UdpErrorUtil.getError(null, exception.getMessage())));
+                } catch (IllegalStateException ise) {
+                    callback.invoke(UdpErrorUtil.getError(null, ise.getMessage()));
+                } catch (UnknownHostException uhe) {
+                    callback.invoke(UdpErrorUtil.getError(null, uhe.getMessage()));
+                } catch (IOException ioe) {
+                    // an exception occurred
+                    callback.invoke(UdpErrorUtil.getError(null, ioe.getMessage()));
                 }
             }
         }));
@@ -245,6 +312,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                     mMulticastLock.release();
                 }
                 client.close();
+                _framesData.clear();
+
                 callback.invoke();
                 mClients.remove(cId);
             }
@@ -278,8 +347,9 @@ public final class UdpSockets extends ReactContextBaseJavaModule
      * Notifies the javascript layer upon data receipt.
      */
     @Override
-    public void didReceiveData(final UdpSocketClient socket, final String data, final String host, final int port) {
+    public void didReceiveData(final UdpSocketClient socket, final byte[] frameData, final String data, final String host, final int port) {
         final long ts = System.currentTimeMillis();
+
         executorService.execute(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -296,8 +366,13 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                     return;
                 }
 
+                int frameNo = (frameData[5] & 0xFF) + (frameData[6] & 0xFF) * 256 + (frameData[7] & 0xFF) * 65536;
+
+                addFrameData(frameNo, frameData);
+
                 WritableMap eventParams = Arguments.createMap();
                 eventParams.putString("data", data);
+                eventParams.putInt("frameNo", frameNo);
                 eventParams.putString("address", host);
                 eventParams.putInt("port", port);
                 // Use string for ts since it's 64 bits and putInt is only 32

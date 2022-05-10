@@ -40,6 +40,7 @@ public class UdpReceiverTask implements Runnable {
         final byte[] buffer = new byte[MAX_UDP_DATAGRAM_LEN];
         DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
+
         while (isRunning) {
             try {
                 socket.receive(packet);
@@ -47,7 +48,7 @@ public class UdpReceiverTask implements Runnable {
                 final InetAddress address = packet.getAddress();
                 final String base64Data = Base64.encodeToString(packet.getData(), packet.getOffset(),
                         packet.getLength(), Base64.NO_WRAP);
-                receiverListener.didReceiveData(base64Data, address.getHostAddress(), packet.getPort());
+                receiverListener.didReceiveData(packet.getData(), base64Data, address.getHostAddress(), packet.getPort());
             } catch (IOException ioe) {
                 if (receiverListener != null) {
                     receiverListener.didReceiveError(ioe.getMessage());
@@ -66,7 +67,7 @@ public class UdpReceiverTask implements Runnable {
      * Listener interface for receive events.
      */
     public interface OnDataReceivedListener {
-        void didReceiveData(String data, String host, int port);
+        void didReceiveData(byte[] byteBuffer, String data, String host, int port);
         void didReceiveError(String message);
         void didReceiveRuntimeException(RuntimeException exception);
     }

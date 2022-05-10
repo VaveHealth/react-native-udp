@@ -6,6 +6,7 @@ import android.util.Base64;
 import com.facebook.react.bridge.Callback;
 
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -175,8 +176,8 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
      * Retransmits the data back a level, attaching {@code this}
      */
     @Override
-    public void didReceiveData(String data, String host, int port) {
-        mReceiverListener.didReceiveData(this, data, host, port);
+    public void didReceiveData(byte[] byteBuffer, String data, String host, int port) {
+        mReceiverListener.didReceiveData(this, byteBuffer, data, host, port);
     }
 
     /**
@@ -251,7 +252,7 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
      * Callback interface data received events.
      */
     public interface OnDataReceivedListener {
-        void didReceiveData(UdpSocketClient client, String data, String host, int port);
+        void didReceiveData(UdpSocketClient client, byte[] byteBuffer, String data, String host, int port);
         void didReceiveError(UdpSocketClient client, String message);
     }
 }
