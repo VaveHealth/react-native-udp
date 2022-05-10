@@ -293,6 +293,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                 } catch (Exception exception) {
                     callback.invoke((UdpErrorUtil.getError(null, exception.getMessage())));
                 }
+            }
         }));
     }
 
