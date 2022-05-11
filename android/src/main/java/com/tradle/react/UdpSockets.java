@@ -68,7 +68,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
             _framesData.remove(firstMemorisedFrameNo);
         }
 
-        _framesData.put(frameNo, frameData.clone());
+        _framesData.put(frameNo, frameData);
     }
 
     public byte[] getFrameDataByFrameNo(int frameNo) {

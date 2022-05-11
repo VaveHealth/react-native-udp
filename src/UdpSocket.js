@@ -182,7 +182,7 @@ export default class UdpSocket extends EventEmitter {
    */
   _onReceive(info) {
     // from Uint8Array
-    const buf = Buffer.from(udpJsiModule.JSI_RN_UDP_getFrameDataByFrameNo(info.frameNo));
+    const buf = Buffer.from(udpJsiModule.JSI_RN_UDP_getFrameDataByFrameNo(parseInt(info.frameNo, 10)));
 
     const rinfo = {
       address: info.address,
