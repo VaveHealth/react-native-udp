@@ -1,6 +1,6 @@
 {
   "name": "react-native-udp",
-  "version": "4.1.5",
+  "version": "4.1.5.vavehealth.0.0.1",
   "description": "React Native UDP socket API for Android & iOS",
   "homepage": "https://github.com/tradle/react-native-udp",
   "main": "src/index.js",
@@ -32,7 +32,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tradle/react-native-udp.git"
+    "url": "https://github.com/VaveHealth/react-native-udp"
   },
   "keywords": [
     "react-native",
