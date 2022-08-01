@@ -69,7 +69,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                 context.getFilesDir().getAbsolutePath()
             );
 
-            _MAX_NUMBER_OF_MEMORISED_FRAMES = 255;
+            _MAX_NUMBER_OF_MEMORISED_FRAMES = 225;
             _framesData = new MaxSizeHashMap<>(_MAX_NUMBER_OF_MEMORISED_FRAMES);
 
             return true;
@@ -113,6 +113,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
 
     public void setMaxNumberOfMemorisedFrames(int maxNumberOfFrames) {
         _MAX_NUMBER_OF_MEMORISED_FRAMES = maxNumberOfFrames;
+        _framesData = new MaxSizeHashMap<>(maxNumberOfFrames);
+        _framesDataKeys = new ArrayList<Integer>(_framesData.keySet());
     }
 
     private WifiManager.MulticastLock mMulticastLock;
