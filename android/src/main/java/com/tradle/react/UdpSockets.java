@@ -23,7 +23,9 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,7 +41,21 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     private native void nativeInstall(long jsiPtr, String docDir);
     private int _MAX_NUMBER_OF_MEMORISED_FRAMES;
 
-    public Map<Integer, byte[]> _framesData;
+    private class MaxSizeHashMap<K, V> extends LinkedHashMap<K, V> {
+        private final int maxSize;
+
+        public MaxSizeHashMap(int maxSize) {
+            this.maxSize = maxSize;
+        }
+
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+            return size() > maxSize;
+        }
+    }
+
+    public MaxSizeHashMap<Integer, byte[]> _framesData;
+    public List<Integer> _framesDataKeys;
 
     @ReactMethod(isBlockingSynchronousMethod = true)
     public boolean install() {
@@ -53,8 +69,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                 context.getFilesDir().getAbsolutePath()
             );
 
-            _framesData = new LinkedHashMap<>();
             _MAX_NUMBER_OF_MEMORISED_FRAMES = 255;
+            _framesData = new MaxSizeHashMap<>(_MAX_NUMBER_OF_MEMORISED_FRAMES);
 
             return true;
         } catch (Exception exception) {
@@ -63,12 +79,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public void addFrameData(int frameNo, byte[] frameData) {
-        if(_framesData.size() >= _MAX_NUMBER_OF_MEMORISED_FRAMES) {
-            int firstMemorisedFrameNo = getFirstMemorisedFrameNo();
-            _framesData.remove(firstMemorisedFrameNo);
-        }
-
         _framesData.put(frameNo, frameData);
+        _framesDataKeys = new ArrayList<Integer>(_framesData.keySet());
     }
 
     public byte[] getFrameDataByFrameNo(int frameNo) {
@@ -76,11 +88,11 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public int getFirstMemorisedFrameNo() {
-        if(_framesData.isEmpty()) {
+        if(_framesDataKeys.isEmpty()) {
             return -1;
         }
 
-        return _framesData.keySet().stream().findFirst().get();
+        return _framesDataKeys.get(0);
     }
 
     public int getLastMemorisedFrameNo() {
@@ -88,11 +100,11 @@ public final class UdpSockets extends ReactContextBaseJavaModule
             return -1;
         }
 
-        return _framesData.keySet().stream().skip(getCountOfMemorisedFrames() - 1).findFirst().get();
+        return _framesDataKeys.get(_framesDataKeys.size() - 1);
     }
 
     public int getCountOfMemorisedFrames() {
-        return _framesData.size();
+        return _framesDataKeys.size();
     }
 
     public int getMaxNumberOfMemorisedFrames() {
