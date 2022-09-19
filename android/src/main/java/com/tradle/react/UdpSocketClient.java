@@ -175,8 +175,8 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
      * Retransmits the data back a level, attaching {@code this}
      */
     @Override
-    public void didReceiveData(byte[] byteBuffer, String data, String host, int port) {
-        mReceiverListener.didReceiveData(this, byteBuffer, data, host, port);
+    public void didReceiveData(byte[] byteBuffer, String host, int port) {
+        mReceiverListener.didReceiveData(this, byteBuffer, host, port);
     }
 
     /**
@@ -251,7 +251,7 @@ public final class UdpSocketClient implements UdpReceiverTask.OnDataReceivedList
      * Callback interface data received events.
      */
     public interface OnDataReceivedListener {
-        void didReceiveData(UdpSocketClient client, byte[] byteBuffer, String data, String host, int port);
+        void didReceiveData(UdpSocketClient client, byte[] byteBuffer, String host, int port);
         void didReceiveError(UdpSocketClient client, String message);
     }
 }

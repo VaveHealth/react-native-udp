@@ -364,7 +364,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
      * Notifies the javascript layer upon data receipt.
      */
     @Override
-    public void didReceiveData(final UdpSocketClient socket, final byte[] frameData, final String data, final String host, final int port) {
+    public void didReceiveData(final UdpSocketClient socket, final byte[] frameData, final String host, final int port) {
         final long ts = System.currentTimeMillis();
 
         executorService.execute(new Thread(new Runnable() {
@@ -388,7 +388,6 @@ public final class UdpSockets extends ReactContextBaseJavaModule
                 addFrameData(frameNo, frameData);
 
                 WritableMap eventParams = Arguments.createMap();
-                eventParams.putString("data", data);
                 eventParams.putInt("frameNo", frameNo);
                 eventParams.putString("address", host);
                 eventParams.putInt("port", port);
