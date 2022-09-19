@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.9.0)
 
 set (PACKAGE_NAME "reactnativeudp")
-set (BUILD_DIR ./build)
+set (BUILD_DIR ${CMAKE_SOURCE_DIR}/build)
 
 include_directories(
         "../cpp"
@@ -12,39 +12,24 @@ include_directories(
         "."
 )
 
-file (GLOB LIBRN_DIR "${BUILD_DIR}/react-native-0*/jni/${ANDROID_ABI}")
-message(STATUS "LIBRN_DIR: ${LIBRN_DIR}")
+add_library(
+        ${PACKAGE_NAME}
+        SHARED
+        ./cpp-adapter.cpp
+        "../cpp/utils/TypedArray.cpp"
+)
 
-if (EXISTS "${LIBRN_DIR}/libjsi.so")
-  # React Native 0.66.x and above
+set_target_properties(
+        ${PACKAGE_NAME} PROPERTIES
+        CXX_STANDARD 17
+        CXX_EXTENSIONS OFF
+        POSITION_INDEPENDENT_CODE ON
+)
 
-  find_library(
-          JSI_LIB
-          jsi
-          PATHS ${LIBRN_DIR}
-          NO_CMAKE_FIND_ROOT_PATH
-  )
-
-  add_library(
-          ${PACKAGE_NAME}
-          SHARED
-          ./cpp-adapter.cpp
-          "../cpp/utils/TypedArray.cpp"
-  )
-else()
-  # React Native 0.65.x and below
-  set (JSI_LIB "")
-  add_library(
-          ${PACKAGE_NAME}
-          SHARED
-          ../../react-native/ReactCommon/jsi/jsi/jsi.cpp
-          ./cpp-adapter.cpp
-          "../cpp/utils/TypedArray.cpp"
-  )
-endif()
+file (GLOB LIBRN_DIR "${PREBUILT_DIR}/${ANDROID_ABI}")
 
 find_library(
-        LOG_LIB
+        log-lib
         log
 )
 
@@ -55,17 +40,24 @@ find_library(
         NO_CMAKE_FIND_ROOT_PATH
 )
 
-set_target_properties(
-        ${PACKAGE_NAME} PROPERTIES
-        CXX_STANDARD 17
-        CXX_EXTENSIONS OFF
-        POSITION_INDEPENDENT_CODE ON
-)
+
+if(${REACT_NATIVE_VERSION} LESS 66)
+        # JSI lib didn't exist on RN 0.65 and before. Simply omit it.
+        set (JSI_LIB "")
+else()
+        # RN 0.66 distributes libjsi.so, can be used instead of compiling jsi.cpp manually.
+        find_library(
+                JSI_LIB
+                jsi
+                PATHS ${LIBRN_DIR}
+                NO_CMAKE_FIND_ROOT_PATH
+        )
+endif()
 
 target_link_libraries(
         ${PACKAGE_NAME}
-        ${LOG_LIB}
-        ${REACT_NATIVE_JNI_LIB}
+        ${log-lib}
         ${JSI_LIB}
+        ${REACT_NATIVE_JNI_LIB}
         android
 )
