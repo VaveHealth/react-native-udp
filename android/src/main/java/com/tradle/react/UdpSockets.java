@@ -70,8 +70,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
             _framesData.remove(frameToRemove);
         }
 
-        _framesData.put(frameNo, frameData);
         _framesNumbers.add(frameNo);
+        _framesData.put(frameNo, frameData);
     }
 
     public byte[] getFrameDataByFrameNo(int frameNo) {
@@ -95,7 +95,7 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public int getCountOfMemorisedFrames() {
-        return _framesNumbers.size();
+        return Math.min(_framesNumbers.size(), _MAX_NUMBER_OF_MEMORISED_FRAMES);
     }
 
     public int getMaxNumberOfMemorisedFrames() {
