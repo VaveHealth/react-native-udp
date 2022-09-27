@@ -23,10 +23,8 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,21 +39,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     private native void nativeInstall(long jsiPtr, String docDir);
     private int _MAX_NUMBER_OF_MEMORISED_FRAMES;
 
-    private class MaxSizeHashMap<K, V> extends LinkedHashMap<K, V> {
-        private final int maxSize;
-
-        public MaxSizeHashMap(int maxSize) {
-            this.maxSize = maxSize;
-        }
-
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
-            return size() > maxSize;
-        }
-    }
-
-    public MaxSizeHashMap<Integer, byte[]> _framesData;
-    public List<Integer> _framesDataKeys;
+    public ConcurrentHashMap<Integer, byte[]> _framesData;
+    public CopyOnWriteArrayList<Integer> _framesNumbers;
 
     @ReactMethod(isBlockingSynchronousMethod = true)
     public boolean install() {
@@ -70,8 +55,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
             );
 
             _MAX_NUMBER_OF_MEMORISED_FRAMES = 225;
-            _framesData = new MaxSizeHashMap<>(_MAX_NUMBER_OF_MEMORISED_FRAMES);
-
+            _framesData = new ConcurrentHashMap<>();
+            _framesNumbers = new CopyOnWriteArrayList<>();
             return true;
         } catch (Exception exception) {
             return false;
@@ -79,8 +64,14 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public void addFrameData(int frameNo, byte[] frameData) {
+        if(_framesNumbers.size() >= _MAX_NUMBER_OF_MEMORISED_FRAMES) {
+            int frameToRemove = _framesNumbers.get(0);
+            _framesNumbers.remove(0);
+            _framesData.remove(frameToRemove);
+        }
+
         _framesData.put(frameNo, frameData);
-        _framesDataKeys = new ArrayList<Integer>(_framesData.keySet());
+        _framesNumbers.add(frameNo);
     }
 
     public byte[] getFrameDataByFrameNo(int frameNo) {
@@ -88,23 +79,23 @@ public final class UdpSockets extends ReactContextBaseJavaModule
     }
 
     public int getFirstMemorisedFrameNo() {
-        if(_framesDataKeys.isEmpty()) {
+        if(_framesNumbers.isEmpty()) {
             return -1;
         }
 
-        return _framesDataKeys.get(0);
+        return _framesNumbers.get(0);
     }
 
     public int getLastMemorisedFrameNo() {
-        if(_framesData.isEmpty()) {
+        if(_framesNumbers.isEmpty()) {
             return -1;
         }
 
-        return _framesDataKeys.get(_framesDataKeys.size() - 1);
+        return _framesNumbers.get(_framesNumbers.size() - 1);
     }
 
     public int getCountOfMemorisedFrames() {
-        return _framesDataKeys.size();
+        return _framesNumbers.size();
     }
 
     public int getMaxNumberOfMemorisedFrames() {
@@ -113,8 +104,8 @@ public final class UdpSockets extends ReactContextBaseJavaModule
 
     public void setMaxNumberOfMemorisedFrames(int maxNumberOfFrames) {
         _MAX_NUMBER_OF_MEMORISED_FRAMES = maxNumberOfFrames;
-        _framesData = new MaxSizeHashMap<>(maxNumberOfFrames);
-        _framesDataKeys = new ArrayList<Integer>(_framesData.keySet());
+        _framesData = new ConcurrentHashMap<>();
+        _framesNumbers = new CopyOnWriteArrayList<>();
     }
 
     private WifiManager.MulticastLock mMulticastLock;
