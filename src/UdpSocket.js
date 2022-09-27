@@ -10,6 +10,21 @@ const STATE = {
   BOUND: 2,
 }
 
+const udpJsiModule = global
+
+export function isLoaded() {
+  return typeof udpJsiModule.JSI_RN_UDP_getFrameDataByFrameNo === 'function'
+}
+
+if (!isLoaded()) {
+  const result = Sockets?.install()
+  if (!result && !isLoaded()) throw new Error('JSI bindings were not installed for: react-native-udp Module')
+
+  if (!isLoaded()) {
+    throw new Error('JSI bindings were not installed for: react-native-udp Module')
+  }
+}
+
 /**
  * @typedef {"ascii" | "utf8" | "utf-8" | "utf16le" | "ucs2" | "ucs-2" | "base64" | "latin1" | "binary" | "hex"} BufferEncoding
  */
@@ -166,8 +181,9 @@ export default class UdpSocket extends EventEmitter {
    * @param {{ data: string; address: string; port: number; ts: number; }} info
    */
   _onReceive(info) {
-    // from base64 string
-    const buf = Buffer.from(info.data, 'base64')
+    // from Uint8Array
+    const buf = Buffer.from(udpJsiModule.JSI_RN_UDP_getFrameDataByFrameNo(parseInt(info.frameNo, 10)));
+
     const rinfo = {
       address: info.address,
       port: info.port,

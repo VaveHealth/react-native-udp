@@ -19,17 +19,20 @@
   "files": [
     "/android/src/",
     "/android/build.gradle",
+    "/android/CMakeLists.txt",
+    "/android/cpp-adapter.cpp",
     "/ios",
     "!Podfile*",
     "/windows",
     "/src",
     "/lib",
     "/*.podspec",
-    "/jest"
+    "/jest",
+    "/cpp"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tradle/react-native-udp.git"
+    "url": "https://github.com/VaveHealth/react-native-udp"
   },
   "keywords": [
     "react-native",

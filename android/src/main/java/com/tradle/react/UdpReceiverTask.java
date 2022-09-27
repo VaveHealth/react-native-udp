@@ -45,9 +45,8 @@ public class UdpReceiverTask implements Runnable {
                 socket.receive(packet);
 
                 final InetAddress address = packet.getAddress();
-                final String base64Data = Base64.encodeToString(packet.getData(), packet.getOffset(),
-                        packet.getLength(), Base64.NO_WRAP);
-                receiverListener.didReceiveData(base64Data, address.getHostAddress(), packet.getPort());
+                final byte[] frameData = packet.getData().clone();
+                receiverListener.didReceiveData(frameData, address.getHostAddress(), packet.getPort());
             } catch (IOException ioe) {
                 if (receiverListener != null) {
                     receiverListener.didReceiveError(ioe.getMessage());
@@ -66,7 +65,7 @@ public class UdpReceiverTask implements Runnable {
      * Listener interface for receive events.
      */
     public interface OnDataReceivedListener {
-        void didReceiveData(String data, String host, int port);
+        void didReceiveData(byte[] byteBuffer, String host, int port);
         void didReceiveError(String message);
         void didReceiveRuntimeException(RuntimeException exception);
     }
